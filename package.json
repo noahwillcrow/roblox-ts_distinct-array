@@ -9,6 +9,14 @@
     "prepublishOnly": "rm -rf ./out && npm run build && npm run cleanup",
     "unittests": "rbxtsc --type game && rojo build --output unit-tests.rbxl && lune run ./run-unit-tests.luau ./unit-tests.rbxl"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noahwillcrow/roblox-ts_distinct-array.git"
+  },
+  "bugs": {
+    "url": "https://github.com/noahwillcrow/roblox-ts_distinct-array/issues"
+  },
+  "homepage": "https://github.com/noahwillcrow/roblox-ts_distinct-array#readme",
   "keywords": [],
   "author": "",
   "license": "ISC",
