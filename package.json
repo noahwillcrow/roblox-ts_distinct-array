@@ -6,6 +6,7 @@
   "scripts": {
     "build": "rbxtsc",
     "watch": "rbxtsc -w",
+    "cleanup": "./scripts/delete-specs.sh ./out && rm ./out/unit-test-runner.d.ts && rm ./out/unit-test-runner.luau",
     "prepublishOnly": "rm -rf ./out && npm run build && npm run cleanup",
     "unittests": "rbxtsc --type game && rojo build --output unit-tests.rbxl && lune run ./run-unit-tests.luau ./unit-tests.rbxl"
   },
