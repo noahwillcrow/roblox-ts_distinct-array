@@ -1,8 +1,10 @@
 import { DistinctArray } from "./interfaces";
 
-export function createDistinctArray<T extends defined>(): DistinctArray<T> {
+export function createDistinctArray<T extends defined, K = T>(keyMapper?: (value: T) => K): DistinctArray<T> {
 	const values: T[] = [];
-	const valuesToIndices = new Map<T, number>();
+	const valuesToIndices = new Map<K, number>();
+
+	const getKey = (value: T): K => (keyMapper ? keyMapper(value) : (value as unknown as K));
 
 	const metatable = {} as unknown as { [key: string]: Callback };
 
@@ -15,14 +17,19 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 			throw "Index out of bounds";
 		}
 
+		const key = getKey(value);
+		if (valuesToIndices.has(key) && valuesToIndices.get(key) !== index) {
+			throw "Value already exists in array";
+		}
+
 		if (index === values.size()) {
 			values.push(value);
-			valuesToIndices.set(value, index);
+			valuesToIndices.set(key, index);
 		} else {
 			const oldValue = values[index];
-			valuesToIndices.delete(oldValue);
+			valuesToIndices.delete(getKey(oldValue));
 			values[index] = value;
-			valuesToIndices.set(value, index);
+			valuesToIndices.set(key, index);
 		}
 	};
 
@@ -44,10 +51,10 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 		}
 
 		const value = values.remove(index)!;
-		valuesToIndices.delete(value);
+		valuesToIndices.delete(getKey(value));
 
 		for (let i = index; i < values.size(); i++) {
-			valuesToIndices.set(values[i], i);
+			valuesToIndices.set(getKey(values[i]), i);
 		}
 
 		return value;
@@ -63,13 +70,13 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 		if (index === values.size() - 1) {
 			// Removing the last element
 			values.pop();
-			valuesToIndices.delete(value);
+			valuesToIndices.delete(getKey(value));
 		} else {
 			// Replace with last element and pop
 			const lastValue = values.pop()!;
 			values[index] = lastValue;
-			valuesToIndices.set(lastValue, index);
-			valuesToIndices.delete(value);
+			valuesToIndices.set(getKey(lastValue), index);
+			valuesToIndices.delete(getKey(value));
 		}
 
 		return value;
@@ -97,11 +104,11 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 		},
 
 		has(value: T): boolean {
-			return valuesToIndices.has(value);
+			return valuesToIndices.has(getKey(value));
 		},
 
 		includes(searchElement: T, fromIndex?: number): boolean {
-			const indexOfValue = valuesToIndices.get(searchElement);
+			const indexOfValue = valuesToIndices.get(getKey(searchElement));
 			if (indexOfValue === undefined) {
 				return false;
 			}
@@ -114,7 +121,7 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 		},
 
 		indexOf(searchElement: T, fromIndex?: number): number {
-			const index = valuesToIndices.get(searchElement);
+			const index = valuesToIndices.get(getKey(searchElement));
 
 			if (index === undefined) {
 				return -1;
@@ -158,11 +165,12 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 		},
 
 		delete(value: T): void {
-			if (!valuesToIndices.has(value)) {
+			const key = getKey(value);
+			if (!valuesToIndices.has(key)) {
 				return;
 			}
 
-			const index = valuesToIndices.get(value)!;
+			const index = valuesToIndices.get(key)!;
 			remove(index);
 		},
 
@@ -171,16 +179,17 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 				throw "Index out of bounds";
 			}
 
-			const existingIndex = valuesToIndices.get(value);
+			const key = getKey(value);
+			const existingIndex = valuesToIndices.get(key);
 			if (existingIndex !== undefined && existingIndex !== index) {
 				throw "Value already exists in array";
 			}
 
 			values.insert(index, value);
-			valuesToIndices.set(value, index);
+			valuesToIndices.set(key, index);
 
 			for (let i = index + 1; i < values.size(); i++) {
-				valuesToIndices.set(values[i], i);
+				valuesToIndices.set(getKey(values[i]), i);
 			}
 		},
 
@@ -188,7 +197,7 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 			const value = values.pop();
 
 			if (value !== undefined) {
-				valuesToIndices.delete(value);
+				valuesToIndices.delete(getKey(value));
 			}
 
 			return value;
@@ -198,12 +207,13 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 			let nextIndex = values.size();
 
 			for (const item of items) {
-				if (valuesToIndices.has(item)) {
+				const key = getKey(item);
+				if (valuesToIndices.has(key)) {
 					throw "Value already exists in array";
 				}
 
 				values.push(item);
-				valuesToIndices.set(item, nextIndex++);
+				valuesToIndices.set(key, nextIndex++);
 			}
 
 			return nextIndex;
@@ -217,11 +227,11 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 			const shiftedValue = values.shift();
 
 			if (shiftedValue !== undefined) {
-				valuesToIndices.delete(shiftedValue);
+				valuesToIndices.delete(getKey(shiftedValue));
 			}
 
 			for (let i = 0; i < values.size(); i++) {
-				valuesToIndices.set(values[i], i);
+				valuesToIndices.set(getKey(values[i]), i);
 			}
 
 			return shiftedValue;
@@ -231,18 +241,19 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 			values.sort(compareFunction);
 
 			for (let i = 0; i < values.size(); i++) {
-				valuesToIndices.set(values[i], i);
+				valuesToIndices.set(getKey(values[i]), i);
 			}
 
 			return this;
 		},
 
 		unorderedDelete(value: T): void {
-			if (!valuesToIndices.has(value)) {
+			const key = getKey(value);
+			if (!valuesToIndices.has(key)) {
 				return;
 			}
 
-			const index = valuesToIndices.get(value)!;
+			const index = valuesToIndices.get(key)!;
 			unorderedRemove(index);
 		},
 
@@ -252,7 +263,7 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 
 		unshift(...items: T[]): number {
 			for (const item of items) {
-				if (valuesToIndices.has(item)) {
+				if (valuesToIndices.has(getKey(item))) {
 					throw "Value already exists in array";
 				}
 			}
@@ -262,7 +273,7 @@ export function createDistinctArray<T extends defined>(): DistinctArray<T> {
 			}
 
 			for (let i = 0; i < values.size(); i++) {
-				valuesToIndices.set(values[i], i);
+				valuesToIndices.set(getKey(values[i]), i);
 			}
 
 			return values.size();

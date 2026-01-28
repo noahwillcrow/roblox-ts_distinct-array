@@ -482,5 +482,79 @@ export = () => {
 				expect(arr.has(obj2)).to.equal(true);
 			});
 		});
+		describe("keyMapper", () => {
+			it("should enforce uniqueness based on the mapper", () => {
+				const arr = DistinctArray.create<string, string>((s) => s.lower());
+				arr.push("Hello");
+				expect(() => {
+					arr.push("hello");
+				}).to.throw();
+				expect(arr.size()).to.equal(1);
+			});
+
+			it("should work with objects using a key mapper", () => {
+				interface Item {
+					id: string;
+					data: string;
+				}
+				const arr = DistinctArray.create<Item, string>((item) => item.id);
+				arr.push({ id: "1", data: "first" });
+				arr.push({ id: "2", data: "second" });
+
+				expect(arr.has({ id: "1", data: "other" } as Item)).to.equal(true);
+				expect(arr.indexOf({ id: "2", data: "other" } as Item)).to.equal(1);
+
+				expect(() => {
+					arr.push({ id: "1", data: "duplicate" });
+				}).to.throw();
+			});
+
+			it("should delete objects based on core identity of key", () => {
+				interface Item {
+					id: string;
+				}
+				const arr = DistinctArray.create<Item, string>((item) => item.id);
+				const item1 = { id: "1" };
+				arr.push(item1);
+				expect(arr.size()).to.equal(1);
+
+				arr.delete({ id: "1" });
+				expect(arr.size()).to.equal(0);
+				expect(arr.has(item1)).to.equal(false);
+			});
+
+			it("should work with fromArray and keyMapper", () => {
+				const arr = DistinctArray.fromArray<string, string>(["a", "b", "c"], (s) => s.lower());
+				expect(arr.size()).to.equal(3);
+				expect(arr[0]).to.equal("a");
+				expect(arr[1]).to.equal("b");
+				expect(arr[2]).to.equal("c");
+			});
+
+			it("should throw error if fromArray has duplicates according to mapper", () => {
+				expect(() => {
+					DistinctArray.fromArray<string, string>(["a", "A"], (s) => s.lower());
+				}).to.throw();
+			});
+
+			it("should correctly update indices after removal with keyMapper", () => {
+				const arr = DistinctArray.fromArray<string, string>(["a", "b", "c"], (s) => s.lower());
+				arr.remove(0); // remove 'a'
+				expect(arr.indexOf("b")).to.equal(0);
+				expect(arr.indexOf("c")).to.equal(1);
+			});
+
+			it("should correctly handle index assignment with keyMapper", () => {
+				const arr = DistinctArray.create<string, string>((s) => s.lower());
+				arr.push("a");
+				arr[0] = "A"; // Should work as it's the same key
+				expect(arr[0]).to.equal("A");
+				expect(arr.size()).to.equal(1);
+
+				expect(() => {
+					arr.push("a");
+				}).to.throw();
+			});
+		});
 	});
 };
