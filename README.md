@@ -37,6 +37,17 @@ arr.has(2); // false
 
 // Create from existing array
 const arr2 = DistinctArray.fromArray([1, 2, 3]);
+
+// Custom distinctness key (e.g., case-insensitive strings)
+const caseInsensitiveArr = DistinctArray.create<string>((s) => s.lower());
+caseInsensitiveArr.push("Hello");
+caseInsensitiveArr.push("hello"); // Throws: "Value already exists in array"
+
+// Objects with unique IDs
+interface PlayerData { id: number; name: string }
+const players = DistinctArray.create<PlayerData>((p) => p.id);
+players.push({ id: 1, name: "Alice" });
+players.push({ id: 1, name: "Bob" }); // Throws: "Value already exists in array"
 ```
 
 ## API
@@ -45,9 +56,9 @@ const arr2 = DistinctArray.fromArray([1, 2, 3]);
 
 | Method | Description |
 |--------|-------------|
-| `create<T>()` | Creates an empty `DistinctArray<T>` |
-| `fromArray<T>(array: T[])` | Creates from an array (throws on duplicates) |
-| `fromSet<T>(set: Set<T>)` | Creates from a `Set` |
+| `create<T, K = T>(keyMapper?: (value: T) => K)` | Creates an empty `DistinctArray<T>` with optional key mapper |
+| `fromArray<T, K = T>(array: T[], keyMapper?: (value: T) => K)` | Creates from an array with optional key mapper |
+| `fromSet<T>(set: Set<T>)` | Creates from a `Set`, but does not accept an optional key mapper |
 
 ### Instance Methods
 
